@@ -1,16 +1,16 @@
 {
-  "name": "laird",
+  "name": "thingy52",
   "version": "1.0.4",
-  "description": "Laird SS Temperature and Humidity sensor Node.js library example.",
+  "description": "Nordic Thingy:52 Node.js library example. Please see http://www.nordicsemi.com/thingy for the latest Nordic Thingy:52 news and software releases.",
   "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
   "dependencies": {
     "noble": "^1.9.1",
     "noble-device": "^1.4.1"
   },
-  "devDependencies": {
-    "babel-eslint": "^10.0.3",
-    "eslint": "^6.5.1"
-  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint ."
@@ -21,9 +21,19 @@
   },
   "keywords": [
     "Bluetooth",
+    "Thingy:52",
     "Sensors",
     "Temperature",
-    "Humididty"
+    "Humididty",
+    "Pressure",
+    "Motion",
+    "Speaker",
+    "Microphone",
+    "Color",
+    "Light",
+    "Gas",
+    "Air",
+    "Quality"
   ],
   "author": "Daikoku",
   "license": "SEE LICENSE IN LICENSE.md",
@@ -35,7 +45,7 @@
     "LICENSE.md",
     "SHA256SUMS",
     "index.js",
-    "laird.js",
+    "thingy52.js",
     "manifest.json"
   ],
   "moziot": {
@@ -44,18 +54,6 @@
       "max": 2
     },
     "plugin": true,
-    "exec": "{nodeLoader} {path}",
-    "schema": {
-      "type": "object",
-      "required": [
-        "pollInterval"
-      ],
-      "properties": {
-        "pollInterval": {
-          "type": "integer",
-          "title": "The number of seconds between two polls"
-        }
-      }
-    }
+    "exec": "{nodeLoader} {path}"
   }
 }

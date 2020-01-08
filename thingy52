@@ -1,0 +1,236 @@
+'use-strict';
+ 
+var Thingy = require('./lib/thingy'); 
+var enabled;
+
+console.log('Reading Thingy environment sensors!');
+
+const {
+  Adapter,
+  Device,
+  Property
+} = require('gateway-addon');
+
+class EnvTag extends Device {
+  constructor(adapter, tag) {
+    super(adapter, `${EnvTag.name}-${tag.id}`);
+    this.tag = tag;
+    this['@context'] = 'https://iot.mozilla.org/schemas/';
+    this['@type'] = ['TemperatureSensor'];
+    this.name = this.id;
+    this.description = 'EnvTag';
+
+    this.addProperty({
+      type: 'number',
+      '@type': 'TemperatureProperty',
+      unit: 'degree celsius',
+      title: 'temperature',
+      description: 'The ambient temperature',
+      readOnly: true
+    });
+
+    this.addProperty({
+      type: 'number',
+      unit: '%',
+      title: 'humidity',
+      description: 'The relative humidity',
+      readOnly: true
+    }); 
+
+    this.adapter.handleDeviceAdded(this);
+  }
+
+  addProperty(description) {
+  //  console.log(`Adding property ${description.title} to things gateway.`);
+    const property = new Property(this, description.title, description);
+    this.properties.set(description.title, property);
+    property.setCachedValue(0);
+    this.notifyPropertyChanged(property);
+    
+  }
+
+  startPolling(interval, thingy) {
+    this.poll(thingy);
+/*    this.timer = setInterval(() => {
+      this.poll();
+    }, interval * 1000);
+*/
+  }
+
+  async poll(thingy) {
+    console.log(`Connecting to ${this.id}`);
+    await this.connect(thingy);
+    console.log(`Connected to ${this.id}`);
+    await this.tempPeriodset(thingy);
+    console.log(`tempPeriodset sensor enabled`);
+    await this.sleep(1000);
+    await this.humidPeriodset(thingy);
+    console.log(`humidPeriodset sensor enabled`);
+    await this.sleep(1000);
+    console.log('enabling temp');
+    await this.enableTemp(thingy);
+    console.log(`Temperature Enabled now`);
+    await this.enableHumid(thingy);
+  /*  console.log(`Reading temperature data now`);
+    const [temperature] = await this.readTemp(thingy);
+    console.log(`Obtained temperature value: ${temperature}`);*/
+  }
+
+  async connect(thingy) {
+    return new Promise((resolve, reject) => {
+      thingy.connectAndSetUp((error) => {
+        if (error) {
+	  console.log('Connected error! ' + error ? error : '');
+          reject(error);
+        } else {
+	  console.log('Connected');
+          resolve();
+        }
+      });
+    });
+  }
+
+  async tempPeriodset(thingy) {
+    return new Promise((resolve, reject) => {
+      thingy.on('temperatureNotif', this.onTemperatureData);
+      thingy.temperature_interval_set(3000, function(error) {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async humidPeriodset(thingy) {
+    return new Promise((resolve, reject) => {
+      thingy.on('humidityNotif', this.onHumidityData);
+      thingy.humidity_interval_set(3000, function(error) {
+        if (error) {
+	  console.log(`humidity_interval_set error: ${error}`);
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, ms);
+    });
+  }
+
+  async enableTemp(thingy) {
+    return new Promise((resolve, reject) => {
+      thingy.temperature_enable((error) => {
+	if(error){
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+ }
+
+  async enableHumid(thingy) {
+    return new Promise((resolve, reject) => {
+      thingy.humidity_enable(function(error) {
+	if(error){
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+ }
+
+  async readTemp(thingy) {
+    return new Promise((resolve, reject) => {
+      thingy.read_temperature((error, temperature) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve([temperature]);
+        }
+      });
+    });
+  }
+
+  onTemperatureData(tempData) {
+      console.log('Temperature sensor: ' + tempData);
+//      this.updateValue('temperature', tempData);
+    //const property = this.properties.get('temperature');
+    this.setCachedValue(tempData);
+    this.notifyPropertyChanged(property);
+   }
+
+  onHumidityData(humidData) {
+    console.log('Humidity sensor: ' + humidData);
+    const property = this.properties.get('humidity');
+    property.setCachedValue(humidData);
+    this.notifyPropertyChanged(property);
+//    this.updateValue('humidity', humidData);
+  }
+
+  updateValue(name, value) {
+    console.log(`Set ${name} to ${value}`);
+    const property = this.properties.get(name);
+    property.setCachedValue(value);
+    this.notifyPropertyChanged(property);
+  }
+
+}
+
+class EnvTagAdapter extends Adapter {
+  constructor(addonManager, manifest) {
+  console.log('In Adapter constructor: ');
+    super(addonManager, EnvTagAdapter.name, manifest.name);
+    const pollInterval = manifest.moziot.config.pollInterval;
+    addonManager.addAdapter(this);
+    const knownDevices = {};
+
+  console.log('Calling Thingy Discover: ');
+    Thingy.discoverAll((thingy) => {
+        console.log('Discovered: ' + thingy);
+         const knownDevice = knownDevices[thingy.id];
+ 
+	  if (!knownDevice) {
+		console.log(`Detected new EnvTag ${thingy.id}`);
+		const device = new EnvTag(this, thingy);
+		knownDevices[thingy.id] = device;
+		//this.handleDeviceAdded(device);
+		device.startPolling(pollInterval || 30, thingy);
+	  }
+
+     });	
+   }
+}
+
+
+module.exports = EnvTagAdapter;
+
+
+
+
+/*
+2019-12-23 17:39:36.906 ERROR  : thingy52: /home/pinaka/.mozilla-iot/addons/thingy52/thingy52.js:145
+2019-12-23 17:39:36.906 ERROR  : thingy52:     const property = this.properties.get('temperature');
+2019-12-23 17:39:36.907 ERROR  : thingy52:                                      ^
+2019-12-23 17:39:36.907 ERROR  : thingy52: 
+2019-12-23 17:39:36.907 ERROR  : thingy52: TypeError: Cannot read property 'get' of undefined
+2019-12-23 17:39:36.908 ERROR  : thingy52:     at Thingy.onTemperatureData (/home/pinaka/.mozilla-iot/addons/thingy52/thingy52.js:145:38)
+2019-12-23 17:39:36.908 ERROR  : thingy52:     at emitOne (events.js:116:13)
+2019-12-23 17:39:36.909 ERROR  : thingy52:     at Thingy.emit (events.js:211:7)
+2019-12-23 17:39:36.909 ERROR  : thingy52:     at Thingy.onTempNotif (/home/pinaka/.mozilla-iot/addons/thingy52/lib/thingy.js:103:10)
+2019-12-23 17:39:36.909 ERROR  : thingy52:     at emitTwo (events.js:126:13)
+2019-12-23 17:39:36.910 ERROR  : thingy52:     at Characteristic.emit (events.js:214:7)
+2019-12-23 17:39:36.910 ERROR  : thingy52:     at Noble.onRead (/home/pinaka/.mozilla-iot/addons/thingy52/node_modules/noble/lib/noble.js:316:20)
+2019-12-23 17:39:36.910 ERROR  : thingy52:     at emitMany (events.js:147:13)
+2019-12-23 17:39:36.911 ERROR  : thingy52:     at NobleBindings.emit (events.js:224:7)
+2019-12-23 17:39:36.911 ERROR  : thingy52:     at NobleBindings.onNotification (/home/pinaka/.mozilla-iot/addons/thingy52/node_modules/noble/lib/hci-socket/bindings.js:413:8)
+*/

@@ -1,0 +1,33 @@
+{
+    "id": "laird",
+    "short_name": "Laird SS Temp and Humid Sensor",
+    "name": "Laird Bluetooth Temperature and Humidity Sensor",
+    "version": "1.0.4",
+    "author": "Daikoku",
+    "description": "Connect your Laird Bluetooth Temperature and Humidity Sensor",
+    "homepage_url": "https://github.com/harshadesai/Nordic-Thingy52-Nodejs#readme",
+    "license": "MPL-2.0",
+    "manifest_version": 1,
+    "gateway_specific_settings": {
+        "webthings": {
+            "exec": "{nodeLoader} {path}",
+            "primary_type": "adapter",
+            "strict_max_version": "*",
+            "strict_min_version": "0.10.0"
+        }
+    },
+  "options": {
+    "schema": {
+      "properties": {
+        "pollInterval": {
+          "title": "The number of seconds between two polls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "pollInterval"
+      ],
+      "type": "object"
+    }
+  }
+}

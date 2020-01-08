@@ -1,0 +1,26 @@
+{
+    "id": "thingy52",
+    "short_name": "Nordic Thingy 52",
+    "name": "Nordic Bluetooth Temperature and Humidity Sensor",
+    "version": "1.0.4",
+    "author": "Daikoku",
+    "description": "Connect your Nordic Bluetooth Temperature and Humidity Sensor",
+    "homepage_url": "https://github.com/harshadesai/Nordic-Thingy52-Nodejs#readme",
+    "license": "MPL-2.0",
+    "manifest_version": 1,
+    "gateway_specific_settings": {
+        "webthings": {
+            "exec": "{nodeLoader} {path}",
+            "primary_type": "adapter",
+            "strict_min_version": "0.10.0"
+        }
+    },
+    "options": {
+        "default": {},
+        "schema": {
+            "type": "object",
+            "required": [],
+            "properties": {}
+        }
+    }
+}
